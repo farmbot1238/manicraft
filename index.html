@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Controller - مشروع جهاز تحكم ماينكرافت</title>
+    
+    <!-- إضافة مكتبات Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <style>
+        /* أنماط ماينكرافت */
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #3a6ea5, #1e3c72);
+            font-family: 'Arial', sans-serif;
+            background-size: cover;
+            color: white;
+            min-height: 100vh;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        body[dir="ltr"] {
+            font-family: 'Arial', sans-serif;
+        }
+
+        body[dir="rtl"] {
+            font-family: 'Arial', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .minecraft-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 219, 226, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(106, 190, 106, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(237, 201, 81, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .language-switcher {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+
+        body[dir="rtl"] .language-switcher {
+            left: auto;
+            right: 20px;
+        }
+        
+        .lang-btn {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #5D4037;
+            color: #FFD700;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7em;
+            transition: all 0.3s ease;
+        }
+        
+        .lang-btn:hover {
+            background: rgba(93, 64, 55, 0.8);
+            transform: scale(1.05);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 4px solid #8B8B8B;
+            border-image: 
+                linear-gradient(45deg, #8B8B8B, #696969, #8B8B8B) 1;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 2.5em;
+            color: #4CAF50;
+            text-shadow: 3px 3px 0 #2E7D32, 6px 6px 0 #1B5E20;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2em;
+            color: #FFD700;
+            margin-bottom: 20px;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .section {
+            background: rgba(0, 0, 0, 0.8);
+            border: 3px solid #5D4037;
+            padding: 25px;
+            border-radius: 0;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s ease;
+        }
+        
+        .section:hover {
+            transform: translateY(-5px);
+        }
+        
+        .section-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.2em;
+            color: #FF9800;
+            margin-bottom: 20px;
+            text-align: center;
+            border-bottom: 2px solid #FF9800;
+            padding-bottom: 10px;
+        }
+        
+        .section-content {
+            line-height: 1.8;
+            font-size: 1.1em;
+        }
+        
+        .components-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .component-card {
+            background: rgba(50, 50, 50, 0.9);
+            border: 2px solid #757575;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .component-card:hover {
+            background: rgba(76, 175, 80, 0.2);
+            border-color: #4CAF50;
+            transform: scale(1.05);
+        }
+        
+        .component-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+            color: #4CAF50;
+        }
+        
+        .component-name {
+            font-weight: bold;
+            color: #FFD700;
+            margin-bottom: 5px;
+        }
+        
+        .component-desc {
+            font-size: 0.9em;
+            color: #CCCCCC;
+        }
+        
+        .buttons-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 40px;
+        }
+        
+        .minecraft-button {
+            background: linear-gradient(145deg, #5D4037, #3E2723);
+            border: 4px solid;
+            border-image: 
+                linear-gradient(45deg, #8B4513, #A0522D, #8B4513) 1;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.1em;
+            color: #FFD700;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .minecraft-button:hover {
+            background: linear-gradient(145deg, #6D4C41, #4E342E);
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            color: #FFEB3B;
+        }
+        
+        .button-icon {
+            font-size: 2em;
+            margin-bottom: 15px;
+            display: block;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            background: rgba(76, 175, 80, 0.1);
+            margin: 10px 0;
+            padding: 12px;
+            border-right: 4px solid #4CAF50;
+            transition: all 0.3s ease;
+        }
+
+        body[dir="ltr"] .feature-list li {
+            border-right: none;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .feature-list li:hover {
+            background: rgba(76, 175, 80, 0.3);
+            transform: translateX(-5px);
+        }
+
+        body[dir="ltr"] .feature-list li:hover {
+            transform: translateX(5px);
+        }
+        
+        .feature-list li::before {
+            content: "⛏️";
+            margin-left: 10px;
+        }
+
+        body[dir="ltr"] .feature-list li::before {
+            content: "⛏️";
+            margin-left: 0;
+            margin-right: 10px;
+        }
+        
+        /* تأثيرات بلوكات ماينكرافت */
+        .block-effect {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .block-effect::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                linear-gradient(90deg, transparent 98%, rgba(255,255,255,0.1) 100%),
+                linear-gradient(0deg, transparent 98%, rgba(255,255,255,0.1) 100%);
+            pointer-events: none;
+        }
+
+        /* نافذة الكود */
+        .code-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            overflow-y: auto;
+        }
+
+        .code-content {
+            background: #1e1e1e;
+            margin: 50px auto;
+            padding: 20px;
+            width: 90%;
+            max-width: 1000px;
+            border: 4px solid #5D4037;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8em;
+        }
+
+        body[dir="rtl"] .close-btn {
+            right: auto;
+            left: 10px;
+        }
+
+        .code-header {
+            background: #2d2d2d;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #4CAF50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .code-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7em;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.4;
+            border: 1px solid #333;
+            max-height: 70vh;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* نافذة 3D - تصميم محسن */
+        .model-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 2000;
+        }
+
+        .model-content {
+            background: #1e1e1e;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .model-header {
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px 20px;
+            border-bottom: 3px solid #5D4037;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .model-title {
+            color: #4CAF50;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.2em;
+            margin: 0;
+        }
+
+        .model-viewer {
+            flex: 1;
+            background: 
+                linear-gradient(45deg, #2d2d2d 25%, transparent 25%),
+                linear-gradient(-45deg, #2d2d2d 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #2d2d2d 75%),
+                linear-gradient(-45deg, transparent 75%, #2d2d2d 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .model-container {
+            width: 90%;
+            height: 80%;
+            background: rgba(30, 30, 30, 0.8);
+            border: 3px solid #5D4037;
+            border-radius: 10px;
+            position: relative;
+            box-shadow: 0 0 50px rgba(76, 175, 80, 0.3);
+            overflow: hidden;
+        }
+
+        .model-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .control-btn {
+            background: rgba(76, 175, 80, 0.3);
+            color: white;
+            border: 1px solid #4CAF50;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.6em;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(76, 175, 80, 0.6);
+        }
+
+        .file-info-bar {
+            background: rgba(0, 0, 0, 0.9);
+            padding: 10px 20px;
+            border-top: 2px solid #5D4037;
+            text-align: center;
+        }
+
+        .file-info-text {
+            color: #FFD700;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .loading-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #4CAF50;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8em;
+            text-align: center;
+            z-index: 5;
+        }
+
+        .error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #f44336;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8em;
+            text-align: center;
+            z-index: 5;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #f44336;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .buttons-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .title {
+                font-size: 1.8em;
+            }
+            
+            .language-switcher {
+                position: relative;
+                top: 0;
+                left: 0;
+                margin-bottom: 20px;
+                text-align: center;
+            }
+
+            .code-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .model-container {
+                width: 95%;
+                height: 70%;
+            }
+
+            .model-controls {
+                flex-wrap: wrap;
+                justify-content: center;
+                bottom: 10px;
+            }
+
+            .control-btn {
+                font-size: 0.5em;
+                padding: 6px 10px;
+            }
+        }
+    </style>
+</head>
+<body class="minecraft-bg" dir="ltr">
+    <!-- زر تبديل اللغة -->
+    <div class="language-switcher">
+        <button class="lang-btn" onclick="toggleLanguage()">AR/EN</button>
+    </div>
+
+    <div class="container">
+        <!-- الهيدر -->
+        <div class="header block-effect">
+            <h1 class="title">⛏️ Minecraft Controller</h1>
+            <p class="subtitle" id="subtitle">Graduation Project - Custom Minecraft Controller Device</p>
+        </div>
+        
+        <!-- المحتوى الرئيسي -->
+        <div class="main-content">
+            <!-- قسم شرح المشروع -->
+            <div class="section block-effect">
+                <h2 class="section-title" id="about-title">🎯 About the Project</h2>
+                <div class="section-content">
+                    <p id="about-text1"><strong>Minecraft Controller</strong> is a custom control device developed with Arduino Leonardo, specifically designed to provide a unique gaming experience for Minecraft without using traditional keyboard or mouse.</p>
+                    
+                    <ul class="feature-list">
+                        <li id="feature1">Full control of movement and camera</li>
+                        <li id="feature2">Vibration system for immersive experience</li>
+                        <li id="feature3">Automatic eating when hungry</li>
+                        <li id="feature4">Smart display interface</li>
+                        <li id="feature5">Automatic protection system</li>
+                        <li id="feature6">Alternative control for players with special needs</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- قسم اللعبة -->
+            <div class="section block-effect">
+                <h2 class="section-title" id="game-title">🎮 Target Game</h2>
+                <div class="section-content">
+                    <p id="game-text1"><strong>Minecraft</strong> - The world's most famous survival and creativity game:</p>
+                    
+                    <ul class="feature-list">
+                        <li id="game-feature1">Infinite open world</li>
+                        <li id="game-feature2">Complex crafting and building system</li>
+                        <li id="game-feature3">Survival against night creatures</li>
+                        <li id="game-feature4">Multiple game modes</li>
+                        <li id="game-feature5">Huge player community</li>
+                    </ul>
+                    
+                    <p style="margin-top: 20px; color: #FFD700;" id="game-note">
+                        💡 Minecraft was chosen for its diverse gameplay styles and need for precise and continuous control.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- قسم القطع الإلكترونية -->
+            <div class="section block-effect" style="grid-column: 1 / -1;">
+                <h2 class="section-title" id="components-title">🔧 Electronic Components Used</h2>
+                <div class="components-grid">
+                    <div class="component-card block-effect">
+                        <div class="component-icon">🕹️</div>
+                        <div class="component-name" id="comp1-name">Joystick</div>
+                        <div class="component-desc" id="comp1-desc">For player movement in directions</div>
+                    </div>
+                    
+                    <div class="component-card block-effect">
+                        <div class="component-icon">🎯</div>
+                        <div class="component-name" id="comp2-name">Gyroscope</div>
+                        <div class="component-desc" id="comp2-desc">For camera movement control</div>
+                    </div>
+                    
+                    <div class="component-card block-effect">
+                        <div class="component-icon">📱</div>
+                        <div class="component-name" id="comp3-name">OLED Screen</div>
+                        <div class="component-desc" id="comp3-desc">Display game information</div>
+                    </div>
+                    
+                    <div class="component-card block-effect">
+                        <div class="component-icon">⚙️</div>
+                        <div class="component-name" id="comp4-name">Servo Motors</div>
+                        <div class="component-desc" id="comp4-desc">Protection and safety mechanism</div>
+                    </div>
+                    
+                    <div class="component-card block-effect">
+                        <div class="component-icon">📏</div>
+                        <div class="component-name" id="comp5-name">Ultrasonic Sensor</div>
+                        <div class="component-desc" id="comp5-desc">Distance detection for auto-eating</div>
+                    </div>
+                    
+                    <div class="component-card block-effect">
+                        <div class="component-icon">📳</div>
+                        <div class="component-name" id="comp6-name">Vibration Motor</div>
+                        <div class="component-desc" id="comp6-desc">Haptic feedback</div>
+                    </div>
+                    
+                    <div class="component-card block-effect">
+                        <div class="component-icon">🔘</div>
+                        <div class="component-name" id="comp7-name">Buttons</div>
+                        <div class="component-desc" id="comp7-desc">Quick game commands</div>
+                    </div>
+                    
+                    <div class="component-card block-effect">
+                        <div class="component-icon">💻</div>
+                        <div class="component-name" id="comp8-name">Arduino Leonardo</div>
+                        <div class="component-desc" id="comp8-desc">The brain of the device</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- الأزرار -->
+        <div class="buttons-container">
+            <a href="#" class="minecraft-button block-effect" onclick="show3DModel()">
+                <span class="button-icon">🔬</span>
+                <span id="btn-3d">3D Model</span><br>
+                <small id="btn-3d-desc">View engineering design</small>
+            </a>
+            
+            <a href="#" class="minecraft-button block-effect" onclick="showCode()">
+                <span class="button-icon">💻</span>
+                <span id="btn-code">Source Code</span><br>
+                <small id="btn-code-desc">Browse project code</small>
+            </a>
+        </div>
+    </div>
+
+    <!-- نافذة الكود البرمجي -->
+    <div id="codeModal" class="code-modal">
+        <div class="code-content">
+            <button class="close-btn" onclick="closeCode()">X</button>
+            <div class="code-header">
+                <h2 id="code-title" style="color: #4CAF50; margin: 0;">Minecraft Controller - Source Code</h2>
+                <div class="code-actions">
+                    <button class="action-btn" onclick="copyCode()" id="copyBtn">COPY CODE</button>
+                </div>
+            </div>
+            <div class="code-block" id="codeBlock">
+                <!-- سيتم إدراج الكود هنا -->
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة المجسم 3D -->
+    <div id="modelModal" class="model-modal">
+        <div class="model-content">
+            <div class="model-header">
+                <h2 class="model-title" id="model-title">3D Model - Controller Design</h2>
+                <button class="close-btn" onclick="close3DModel()">X</button>
+            </div>
+            
+            <div class="model-viewer">
+                <div class="model-container" id="modelContainer">
+                    <div class="loading-message" id="loadingMessage">🔄 Loading 3D Model...</div>
+                    <div class="error-message" id="errorMessage" style="display: none;"></div>
+                </div>
+                
+                <div class="model-controls">
+                    <button class="control-btn" onclick="resetView()">🔄 Reset View</button>
+                    <button class="control-btn" onclick="toggleGrid()">📊 Toggle Grid</button>
+                    <button class="control-btn" onclick="loadGLBModel()">🎮 Load Controller</button>
+                    <button class="control-btn" onclick="takeScreenshot()">📸 Screenshot</button>
+                </div>
+            </div>
+            
+            <div class="file-info-bar">
+                <div class="file-info-text">
+                    <strong>File:</strong> <span id="currentFile">3DMANLglb</span> | 
+                    <strong>Format:</strong> GLB (Binary) | 
+                    <strong>Status:</strong> <span id="modelStatus">Ready to load</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // بيانات اللغات
+        const translations = {
+            en: {
+                subtitle: "Graduation Project - Custom Minecraft Controller Device",
+                aboutTitle: "🎯 About the Project",
+                aboutText1: "<strong>Minecraft Controller</strong> is a custom control device developed with Arduino Leonardo, specifically designed to provide a unique gaming experience for Minecraft without using traditional keyboard or mouse.",
+                feature1: "Full control of movement and camera",
+                feature2: "Vibration system for immersive experience",
+                feature3: "Automatic eating when hungry",
+                feature4: "Smart display interface",
+                feature5: "Automatic protection system",
+                feature6: "Alternative control for players with special needs",
+                gameTitle: "🎮 Target Game",
+                gameText1: "<strong>Minecraft</strong> - The world's most famous survival and creativity game:",
+                gameFeature1: "Infinite open world",
+                gameFeature2: "Complex crafting and building system",
+                gameFeature3: "Survival against night creatures",
+                gameFeature4: "Multiple game modes",
+                gameFeature5: "Huge player community",
+                gameNote: "💡 Minecraft was chosen for its diverse gameplay styles and need for precise and continuous control.",
+                componentsTitle: "🔧 Electronic Components Used",
+                comp1Name: "Joystick", comp1Desc: "For player movement in directions",
+                comp2Name: "Gyroscope", comp2Desc: "For camera movement control",
+                comp3Name: "OLED Screen", comp3Desc: "Display game information",
+                comp4Name: "Servo Motors", comp4Desc: "Protection and safety mechanism",
+                comp5Name: "Ultrasonic Sensor", comp5Desc: "Distance detection for auto-eating",
+                comp6Name: "Vibration Motor", comp6Desc: "Haptic feedback",
+                comp7Name: "Buttons", comp7Desc: "Quick game commands",
+                comp8Name: "Arduino Leonardo", comp8Desc: "The brain of the device",
+                btn3d: "3D Model", btn3dDesc: "View engineering design",
+                btnCode: "Source Code", btnCodeDesc: "Browse project code",
+                codeTitle: "Minecraft Controller - Source Code",
+                modelTitle: "3D Model - Controller Design"
+            },
+            ar: {
+                subtitle: "مشروع تخرج - جهاز تحكم مخصص للعبة ماينكرافت",
+                aboutTitle: "🎯 عن المشروع",
+                aboutText1: "مشروع <strong>Minecraft Controller</strong> هو جهاز تحكم مخصص تم تطويره بلوحة الأردوينو ليوناردو، مصمم خصيصاً لتوفير تجربة لعب فريدة للعبة ماينكرافت بدون استخدام لوحة المفاتيح أو الفأرة التقليدية.",
+                feature1: "تحكم كامل في الحركة والكاميرا",
+                feature2: "نظام اهتزاز لتجربة غامرة",
+                feature3: "أكل تلقائي عند الجوع",
+                feature4: "واجهة عرض ذكية",
+                feature5: "نظام حماية آلي",
+                feature6: "تحكم بديل للاعبين ذوي الاحتياجات الخاصة",
+                gameTitle: "🎮 اللعبة المستهدفة",
+                gameText1: "<strong>ماينكرافت (Minecraft)</strong> - لعبة البقاء والإبداع الأشهر في العالم:",
+                gameFeature1: "عالم مفتوح لا نهائي",
+                gameFeature2: "نظام صناعة وبناء معقد",
+                gameFeature3: "البقاء ضد الكائنات الليلية",
+                gameFeature4: "أوضاع لعب متعددة",
+                gameFeature5: "مجتمع لاعبين ضخم",
+                gameNote: "💡 تم اختيار ماينكرافت لتنوع أنماط اللعب فيها واحتياجها لتحكم دقيق ومستمر.",
+                componentsTitle: "🔧 القطع الإلكترونية المستخدمة",
+                comp1Name: "الجوي ستيك", comp1Desc: "لتحريك اللاعب في الاتجاهات",
+                comp2Name: "الجيروسكوب", comp2Desc: "لتحريك كاميرا اللاعب",
+                comp3Name: "شاشة OLED", comp3Desc: "عرض معلومات اللعب",
+                comp4Name: "محركات سيرفو", comp4Desc: "آلية الحماية والأمان",
+                comp5Name: "حساس التراسونك", comp5Desc: "كشف المسافات للأكل التلقائي",
+                comp6Name: "ماتور الاهتزاز", comp6Desc: "تغذية راجعة لمسية",
+                comp7Name: "الأزرار", comp7Desc: "أوامر سريعة للعبة",
+                comp8Name: "أردوينو ليوناردو", comp8Desc: "العقل المدبر للجهاز",
+                btn3d: "المجسم ثلاثي الأبعاد", btn3dDesc: "شاهد التصميم الهندسي",
+                btnCode: "الكود البرمجي", btnCodeDesc: "استعرض كود المشروع",
+                codeTitle: "Minecraft Controller - الكود البرمجي",
+                modelTitle: "المجسم ثلاثي الأبعاد - تصميم الجهاز"
+            }
+        };
+
+        // الكود البرمجي الكامل والمنظم
+        const arduinoCode = `/*
+ * Minecraft Controller - Custom Gaming Device
+ * File: MINECRAFT_CONTROLLER.ino
+ * Author: Your Name
+ * Date: ${new Date().toLocaleDateString()}
+ * Description: Arduino code for custom Minecraft controller with joystick, gyroscope, and haptic feedback
+ */
+
+// ==================== LIBRARIES ====================
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <Servo.h>
+#include <Mouse.h>
+#include <Keyboard.h>
+
+// ==================== DISPLAY CONFIG ====================
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_ADDRESS 0x3C
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+// ==================== SERVO MOTORS ====================
+Servo servo1;
+Servo servo2;
+
+// ==================== PIN DEFINITIONS ====================
+// Analog Pins
+const int JOYSTICK_X = A0;
+const int JOYSTICK_Y = A1;
+
+// Digital Pins
+const int JOYSTICK_BTN = 2;
+const int SERVO_1 = 12;
+const int SERVO_2 = 13;
+
+// ==================== SYSTEM VARIABLES ====================
+bool vibrationEnabled = true;
+bool autoEatEnabled = true;
+int playerHealth = 100;
+int hungerLevel = 100;
+
+// ==================== SETUP FUNCTION ====================
+void setup() {
+    // Initialize serial communication
+    Serial.begin(9600);
+    Serial.println("Minecraft Controller - Starting...");
+    
+    // Initialize OLED display
+    if(!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS)) {
+        Serial.println("SSD1306 allocation failed");
+        while(true);
+    }
+    
+    // Initialize pins
+    pinMode(JOYSTICK_BTN, INPUT_PULLUP);
+    
+    // Initialize servos
+    servo1.attach(SERVO_1);
+    servo2.attach(SERVO_2);
+    resetServos();
+    
+    // Start input devices
+    Mouse.begin();
+    Keyboard.begin();
+    
+    // Show startup screen
+    displayStartupScreen();
+    
+    Serial.println("Minecraft Controller - Ready!");
+}
+
+// ==================== MAIN LOOP ====================
+void loop() {
+    // Read all inputs
+    readJoystick();
+    
+    // Process automated features
+    if(autoEatEnabled) {
+        checkAutoEat();
+    }
+    
+    // Update display
+    updateDisplay();
+    
+    // Main loop delay
+    delay(50);
+}
+
+void resetServos() {
+    servo1.write(0);
+    servo2.write(0);
+}
+
+void displayStartupScreen() {
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(WHITE);
+    display.setCursor(0,0);
+    display.println("Minecraft Controller");
+    display.println("v1.0 - Ready");
+    display.println("3DMANI.GLB Loaded");
+    display.display();
+    delay(2000);
+}
+
+void readJoystick() {
+    int xValue = analogRead(JOYSTICK_X);
+    int yValue = analogRead(JOYSTICK_Y);
+    
+    // Vertical movement (W/S keys)
+    if(yValue < 400) {
+        Keyboard.press('w');
+        Keyboard.release('s');
+    } else if(yValue > 600) {
+        Keyboard.press('s');
+        Keyboard.release('w');
+    } else {
+        Keyboard.release('w');
+        Keyboard.release('s');
+    }
+    
+    // Horizontal movement (A/D keys)
+    if(xValue < 400) {
+        Keyboard.press('a');
+        Keyboard.release('d');
+    } else if(xValue > 600) {
+        Keyboard.press('d');
+        Keyboard.release('a');
+    } else {
+        Keyboard.release('a');
+        Keyboard.release('d');
+    }
+    
+    // Joystick button (Left mouse click)
+    if(digitalRead(JOYSTICK_BTN) == LOW) {
+        Mouse.click(MOUSE_LEFT);
+        delay(300);
+    }
+}
+
+void updateDisplay() {
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(WHITE);
+    display.setCursor(0,0);
+    display.println("MC Controller v1.0");
+    display.println("Health: " + String(playerHealth));
+    display.println("Hunger: " + String(hungerLevel));
+    display.println("3DMANI.GLB Active");
+    display.display();
+}
+
+/*
+ * END OF MINECRAFT CONTROLLER CODE
+ * Project: Custom Minecraft Controller
+ * 3D Model: 3DMANLglb
+ * Developed with Arduino Leonardo
+ */`;
+
+        // متغيرات Three.js
+        let scene, camera, renderer, controls, model, gridHelper;
+        let isGridVisible = true;
+
+        // دالة تهيئة المشهد ثلاثي الأبعاد
+        function init3DViewer() {
+            const container = document.getElementById('modelContainer');
+            
+            // إنشاء المشهد
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1e1e1e);
+            
+            // الكاميرا
+            camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(5, 5, 5);
+            
+            // الإضاءة
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 10, 5);
+            scene.add(directionalLight);
+            
+            // ال renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            // مسح المحتوى القديم وإضافة ال renderer الجديد
+            container.innerHTML = '';
+            container.appendChild(renderer.domElement);
+            
+            // التحكم بالمشهد
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = false;
+            controls.minDistance = 1;
+            controls.maxDistance = 50;
+            controls.maxPolarAngle = Math.PI;
+            
+            // شبكة المساعدة
+            gridHelper = new THREE.GridHelper(20, 20, 0x4CAF50, 0x2E7D32);
+            gridHelper.position.y = -2;
+            scene.add(gridHelper);
+            
+            // محاور المساعدة
+            const axesHelper = new THREE.AxesHelper(5);
+            scene.add(axesHelper);
+            
+            // التأكد من أن الحجم مضبوط عند تغيير حجم النافذة
+            window.addEventListener('resize', onWindowResize);
+            
+            // بدء التصيير
+            animate();
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('modelContainer');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // دالة تحميل النموذج ثلاثي الأبعاد
+        function loadGLBModel() {
+            const loadingMessage = document.getElementById('loadingMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            const modelStatus = document.getElementById('modelStatus');
+            const currentFile = document.getElementById('currentFile');
+            
+            loadingMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+            modelStatus.textContent = 'Loading...';
+            currentFile.textContent = '3DMANLglb';
+            
+            // إزالة النموذج القديم إذا كان موجوداً
+            if (model) {
+                scene.remove(model);
+            }
+            
+            const loader = new THREE.GLTFLoader();
+            
+            loader.load(
+                '3DMANLglb',
+                function(gltf) {
+                    model = gltf.scene;
+                    
+                    // ضبط حجم وموضع النموذج
+                    const box = new THREE.Box3().setFromObject(model);
+                    const center = box.getCenter(new THREE.Vector3());
+                    const size = box.getSize(new THREE.Vector3());
+                    
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    const scale = 10 / maxDim;
+                    
+                    model.scale.setScalar(scale);
+                    model.position.y = -2;
+                    
+                    // إضافة الظلال
+                    model.traverse(function(node) {
+                        if (node.isMesh) {
+                            node.castShadow = true;
+                            node.receiveShadow = true;
+                        }
+                    });
+                    
+                    scene.add(model);
+                    loadingMessage.style.display = 'none';
+                    modelStatus.textContent = 'Loaded successfully';
+                    
+                    console.log('3D model loaded successfully');
+                },
+                function(xhr) {
+                    // تتبع التقدم
+                    const percent = (xhr.loaded / xhr.total * 100).toFixed(2);
+                    loadingMessage.textContent = `🔄 Loading 3D Model... ${percent}%`;
+                },
+                function(error) {
+                    loadingMessage.style.display = 'none';
+                    errorMessage.style.display = 'block';
+                    errorMessage.innerHTML = `
+                        ❌ Error loading 3D model:<br>
+                        ${error.message}<br><br>
+                        <small>Make sure the file "3DMANLglb" is in the same folder</small>
+                    `;
+                    modelStatus.textContent = 'Load failed';
+                    console.error('Error loading 3D model:', error);
+                }
+            );
+        }
+
+        // دوال التحكم بالمشهد
+        function resetView() {
+            controls.reset();
+            camera.position.set(5, 5, 5);
+        }
+
+        function toggleGrid() {
+            isGridVisible = !isGridVisible;
+            gridHelper.visible = isGridVisible;
+        }
+
+        function takeScreenshot() {
+            renderer.render(scene, camera);
+            const dataURL = renderer.domElement.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'minecraft-controller-3d.png';
+            link.href = dataURL;
+            link.click();
+        }
+
+        // دالة تبديل اللغة
+        function toggleLanguage() {
+            const currentDir = document.body.dir;
+            const newDir = currentDir === 'ltr' ? 'rtl' : 'ltr';
+            const newLang = currentDir === 'ltr' ? 'ar' : 'en';
+            
+            document.body.dir = newDir;
+            updateContent(newLang);
+        }
+
+        // دالة تحديث المحتوى
+        function updateContent(lang) {
+            const t = translations[lang];
+            
+            document.getElementById('subtitle').textContent = t.subtitle;
+            document.getElementById('about-title').textContent = t.aboutTitle;
+            document.getElementById('about-text1').innerHTML = t.aboutText1;
+            
+            document.getElementById('feature1').textContent = t.feature1;
+            document.getElementById('feature2').textContent = t.feature2;
+            document.getElementById('feature3').textContent = t.feature3;
+            document.getElementById('feature4').textContent = t.feature4;
+            document.getElementById('feature5').textContent = t.feature5;
+            document.getElementById('feature6').textContent = t.feature6;
+            
+            document.getElementById('game-title').textContent = t.gameTitle;
+            document.getElementById('game-text1').innerHTML = t.gameText1;
+            document.getElementById('game-feature1').textContent = t.gameFeature1;
+            document.getElementById('game-feature2').textContent = t.gameFeature2;
+            document.getElementById('game-feature3').textContent = t.gameFeature3;
+            document.getElementById('game-feature4').textContent = t.gameFeature4;
+            document.getElementById('game-feature5').textContent = t.gameFeature5;
+            document.getElementById('game-note').textContent = t.gameNote;
+            
+            document.getElementById('components-title').textContent = t.componentsTitle;
+            
+            document.getElementById('comp1-name').textContent = t.comp1Name;
+            document.getElementById('comp1-desc').textContent = t.comp1Desc;
+            document.getElementById('comp2-name').textContent = t.comp2Name;
+            document.getElementById('comp2-desc').textContent = t.comp2Desc;
+            document.getElementById('comp3-name').textContent = t.comp3Name;
+            document.getElementById('comp3-desc').textContent = t.comp3Desc;
+            document.getElementById('comp4-name').textContent = t.comp4Name;
+            document.getElementById('comp4-desc').textContent = t.comp4Desc;
+            document.getElementById('comp5-name').textContent = t.comp5Name;
+            document.getElementById('comp5-desc').textContent = t.comp5Desc;
+            document.getElementById('comp6-name').textContent = t.comp6Name;
+            document.getElementById('comp6-desc').textContent = t.comp6Desc;
+            document.getElementById('comp7-name').textContent = t.comp7Name;
+            document.getElementById('comp7-desc').textContent = t.comp7Desc;
+            document.getElementById('comp8-name').textContent = t.comp8Name;
+            document.getElementById('comp8-desc').textContent = t.comp8Desc;
+            
+            document.getElementById('btn-3d').textContent = t.btn3d;
+            document.getElementById('btn-3d-desc').textContent = t.btn3dDesc;
+            document.getElementById('btn-code').textContent = t.btnCode;
+            document.getElementById('btn-code-desc').textContent = t.btnCodeDesc;
+            document.getElementById('code-title').textContent = t.codeTitle;
+            document.getElementById('model-title').textContent = t.modelTitle;
+        }
+
+        // دالة عرض الكود
+        function showCode() {
+            document.getElementById('codeModal').style.display = 'block';
+            document.getElementById('codeBlock').textContent = arduinoCode;
+        }
+
+        // دالة نسخ الكود
+        function copyCode() {
+            navigator.clipboard.writeText(arduinoCode).then(() => {
+                const btn = document.getElementById('copyBtn');
+                const originalText = btn.textContent;
+                btn.textContent = 'COPIED!';
+                btn.style.background = '#2196F3';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#4CAF50';
+                }, 2000);
+            });
+        }
+
+        // دالة عرض نافذة 3D
+        function show3DModel() {
+            document.getElementById('modelModal').style.display = 'block';
+            
+            // تهيئة المشهد ثلاثي الأبعاد بعد عرض النافذة
+            setTimeout(() => {
+                init3DViewer();
+                loadGLBModel();
+            }, 100);
+        }
+
+        // دالة إغلاق النوافذ
+        function closeCode() {
+            document.getElementById('codeModal').style.display = 'none';
+        }
+
+        function close3DModel() {
+            document.getElementById('modelModal').style.display = 'none';
+        }
+
+        // إغلاق النوافذ عند الضغط خارجها
+        window.onclick = function(event) {
+            const codeModal = document.getElementById('codeModal');
+            const modelModal = document.getElementById('modelModal');
+            
+            if (event.target == codeModal) closeCode();
+            if (event.target == modelModal) close3DModel();
+        }
+
+        // التهيئة الأولية - تلقائي إنجليزي
+        document.addEventListener('DOMContentLoaded', function() {
+            document.body.dir = 'ltr';
+            updateContent('en');
+            
+            // تأثيرات التمرير
+            const sections = document.querySelectorAll('.section');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            sections.forEach(section => {
+                section.style.opacity = '0';
+                section.style.transform = 'translateY(20px)';
+                section.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                observer.observe(section);
+            });
+        });
+    </script>
+</body>
+</html>
